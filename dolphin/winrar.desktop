@@ -1,0 +1,26 @@
+[Desktop Entry]
+Type=Service
+ServiceTypes=KonqPopupMenu/Plugin
+MimeType=application/vnd.rar;application/x-rar;application/zip;application/x-7z-compressed;application/x-tar;application/gzip;application/x-bzip2;application/x-xz;application/octet-stream;
+Actions=extract_here;extract_to;extract_dialog;open_winrar;
+X-KDE-Submenu=WinRAR
+
+[Desktop Action extract_here]
+Name=Extract Here
+Icon=archive-extract
+Exec=python3 ~/.local/bin/winrar_dolphin.py EXTRACT_HERE %F
+
+[Desktop Action extract_to]
+Name=Extract to...
+Icon=archive-extract-magic
+Exec=python3 ~/.local/bin/winrar_dolphin.py EXTRACT_TO %F
+
+[Desktop Action extract_dialog]
+Name=Extract files...
+Icon=folder-open
+Exec=python3 ~/.local/bin/winrar_dolphin.py EXTRACT_DIALOG %F
+
+[Desktop Action open_winrar]
+Name=Open with WinRAR
+Icon=application-x-archive
+Exec=python3 ~/.local/bin/winrar_dolphin.py OPEN %F
