@@ -56,17 +56,83 @@ install_caja() {
     echo -e "${GREEN}[✔] Installation for Caja completed.${NC}"
 }
 
+install_pcmanfm() {
+    echo -e "${GREEN}[+] Installing for PCManFM / PCManFM-Qt...${NC}"
+    mkdir -p ~/.local/bin
+    mkdir -p ~/.local/share/file-manager/actions
+    
+    cp pcmanfm/winrar_pcmanfm.py ~/.local/bin/
+    chmod +x ~/.local/bin/winrar_pcmanfm.py
+
+    local ACTIONS_DIR="$HOME/.local/share/file-manager/actions"
+    local MIME="application/vnd.rar;application/x-rar;application/zip;application/x-7z-compressed;application/x-tar;application/gzip;application/x-bzip2;application/x-xz;application/octet-stream;"
+
+    cat <<EOF > "$ACTIONS_DIR/winrar_extract_here.desktop"
+[Desktop Entry]
+Type=Action
+Name=WinRAR: Extract Here
+Icon=archive-extract
+Profiles=Default;
+
+[X-Action-Profile Default]
+MimeTypes=$MIME
+Exec=python3 $HOME/.local/bin/winrar_pcmanfm.py EXTRACT_HERE %F
+EOF
+
+    cat <<EOF > "$ACTIONS_DIR/winrar_extract_to.desktop"
+[Desktop Entry]
+Type=Action
+Name=WinRAR: Extract to...
+Icon=archive-extract-magic
+Profiles=Default;
+
+[X-Action-Profile Default]
+MimeTypes=$MIME
+Exec=python3 $HOME/.local/bin/winrar_pcmanfm.py EXTRACT_TO %F
+EOF
+
+    cat <<EOF > "$ACTIONS_DIR/winrar_extract_dialog.desktop"
+[Desktop Entry]
+Type=Action
+Name=WinRAR: Extract files...
+Icon=folder-open
+Profiles=Default;
+
+[X-Action-Profile Default]
+MimeTypes=$MIME
+Exec=python3 $HOME/.local/bin/winrar_pcmanfm.py EXTRACT_DIALOG %F
+EOF
+
+    cat <<EOF > "$ACTIONS_DIR/winrar_open.desktop"
+[Desktop Entry]
+Type=Action
+Name=WinRAR: Open with WinRAR
+Icon=application-x-archive
+Profiles=Default;
+
+[X-Action-Profile Default]
+MimeTypes=$MIME
+Exec=python3 $HOME/.local/bin/winrar_pcmanfm.py OPEN %F
+EOF
+
+    echo -e "${YELLOW}[!] Restart PCManFM to see the changes.${NC}"
+    echo -e "${GREEN}[✔] Installation for PCManFM completed.${NC}"
+}
+
+
 HAS_NAUTILUS=false
 HAS_DOLPHIN=false
 HAS_NEMO=false
 HAS_THUNAR=false
 HAS_CAJA=false
+HAS_PCMANFM=false
 
 if command -v nautilus &> /dev/null; then HAS_NAUTILUS=true; fi
 if command -v dolphin &> /dev/null; then HAS_DOLPHIN=true; fi
 if command -v nemo &> /dev/null; then HAS_NEMO=true; fi
 if command -v thunar &> /dev/null; then HAS_THUNAR=true; fi
 if command -v caja &> /dev/null; then HAS_CAJA=true; fi
+if command -v pcmanfm &> /dev/null || command -v pcmanfm-qt &> /dev/null; then HAS_PCMANFM=true; fi
 
 MANAGER_COUNT=0
 [ "$HAS_NAUTILUS" = true ] && ((MANAGER_COUNT++))
@@ -74,6 +140,7 @@ MANAGER_COUNT=0
 [ "$HAS_NEMO" = true ] && ((MANAGER_COUNT++))
 [ "$HAS_THUNAR" = true ] && ((MANAGER_COUNT++))
 [ "$HAS_CAJA" = true ] && ((MANAGER_COUNT++))
+[ "$HAS_PCMANFM" = true ] && ((MANAGER_COUNT++))
 
 if [ "$MANAGER_COUNT" -gt 1 ]; then
     echo -e "${YELLOW}Found multiple supported file managers on your system.${NC}"
@@ -83,31 +150,30 @@ if [ "$MANAGER_COUNT" -gt 1 ]; then
     [ "$HAS_NEMO" = true ] && echo "3. Nemo"
     [ "$HAS_THUNAR" = true ] && echo "4. Thunar"
     [ "$HAS_CAJA" = true ] && echo "5. Caja"
+    [ "$HAS_PCMANFM" = true ] && echo "6. PCManFM / PCManFM-Qt"
     
-    echo -e "${YELLOW}(You can type multiple numbers like '1 3 5' to install for multiple)${NC}"
+    echo -e "${YELLOW}(You can type multiple numbers like '1 3 6' to install for multiple)${NC}"
     read -p "Enter your choice: " choice
 
     VALID_CHOICE=false
     
     if [[ "$choice" == *"1"* ]] && [ "$HAS_NAUTILUS" = true ]; then
-        install_nautilus
-        VALID_CHOICE=true
+        install_nautilus; VALID_CHOICE=true
     fi
     if [[ "$choice" == *"2"* ]] && [ "$HAS_DOLPHIN" = true ]; then
-        install_dolphin
-        VALID_CHOICE=true
+        install_dolphin; VALID_CHOICE=true
     fi
     if [[ "$choice" == *"3"* ]] && [ "$HAS_NEMO" = true ]; then
-        install_nemo
-        VALID_CHOICE=true
+        install_nemo; VALID_CHOICE=true
     fi
     if [[ "$choice" == *"4"* ]] && [ "$HAS_THUNAR" = true ]; then
-        install_thunar
-        VALID_CHOICE=true
+        install_thunar; VALID_CHOICE=true
     fi
     if [[ "$choice" == *"5"* ]] && [ "$HAS_CAJA" = true ]; then
-        install_caja
-        VALID_CHOICE=true
+        install_caja; VALID_CHOICE=true
+    fi
+    if [[ "$choice" == *"6"* ]] && [ "$HAS_PCMANFM" = true ]; then
+        install_pcmanfm; VALID_CHOICE=true
     fi
 
     if [ "$VALID_CHOICE" = false ]; then
@@ -115,21 +181,12 @@ if [ "$MANAGER_COUNT" -gt 1 ]; then
         exit 1
     fi
 
-elif [ "$HAS_NAUTILUS" = true ]; then
-    echo -e "${GREEN}Found only Nautilus file manager.${NC}"
-    install_nautilus
-elif [ "$HAS_DOLPHIN" = true ]; then
-    echo -e "${GREEN}Found only Dolphin file manager.${NC}"
-    install_dolphin
-elif [ "$HAS_NEMO" = true ]; then
-    echo -e "${GREEN}Found only Nemo file manager.${NC}"
-    install_nemo
-elif [ "$HAS_THUNAR" = true ]; then
-    echo -e "${GREEN}Found only Thunar file manager.${NC}"
-    install_thunar
-elif [ "$HAS_CAJA" = true ]; then
-    echo -e "${GREEN}Found only Caja file manager.${NC}"
-    install_caja
+elif [ "$HAS_NAUTILUS" = true ]; then install_nautilus
+elif [ "$HAS_DOLPHIN" = true ]; then install_dolphin
+elif [ "$HAS_NEMO" = true ]; then install_nemo
+elif [ "$HAS_THUNAR" = true ]; then install_thunar
+elif [ "$HAS_CAJA" = true ]; then install_caja
+elif [ "$HAS_PCMANFM" = true ]; then install_pcmanfm
 else
     echo -e "${RED}No supported file managers were found on this system.${NC}"
     exit 1
