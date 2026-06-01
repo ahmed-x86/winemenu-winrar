@@ -9,6 +9,7 @@ Currently, this extension supports five file managers:
 * **Nemo** (Cinnamon / Linux Mint)
 * **Thunar** (XFCE)
 * **Caja** (MATE)
+* **PCManFM / PCManFM-Qt** (LXDE / LXQt)
 
 ## Prerequisites
 
