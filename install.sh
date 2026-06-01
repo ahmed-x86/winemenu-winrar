@@ -9,73 +9,71 @@ cd "$(dirname "$0")" || exit
 
 install_nautilus() {
     echo -e "${GREEN}[+] Installing for Nautilus...${NC}"
-    
     mkdir -p ~/.local/share/nautilus-python/extensions
     cp nautilus/winrar.py ~/.local/share/nautilus-python/extensions/
-    
     echo -e "${GREEN}[+] Restarting Nautilus to apply changes...${NC}"
     nautilus -q || true
-    
     echo -e "${GREEN}[✔] Installation for Nautilus completed.${NC}"
 }
 
 install_dolphin() {
     echo -e "${GREEN}[+] Installing for Dolphin...${NC}"
-    
     mkdir -p ~/.local/bin
     mkdir -p ~/.local/share/kio/servicemenus
-    
     cp dolphin/winrar_dolphin.py ~/.local/bin/
     chmod +x ~/.local/bin/winrar_dolphin.py
-    
     cp dolphin/winrar.desktop ~/.local/share/kio/servicemenus/
     sed -i "s|~|$HOME|g" ~/.local/share/kio/servicemenus/winrar.desktop
     chmod +x ~/.local/share/kio/servicemenus/winrar.desktop
-    
     echo -e "${YELLOW}[!] You may need to close and reopen Dolphin to see the context menu.${NC}"
     echo -e "${GREEN}[✔] Installation for Dolphin completed.${NC}"
 }
 
 install_nemo() {
     echo -e "${GREEN}[+] Installing for Nemo...${NC}"
-    
     mkdir -p ~/.local/share/nemo-python/extensions
     cp nemo/winrar.py ~/.local/share/nemo-python/extensions/
-    
     echo -e "${GREEN}[+] Restarting Nemo to apply changes...${NC}"
     nemo -q || true
-    
     echo -e "${GREEN}[✔] Installation for Nemo completed.${NC}"
 }
 
 install_thunar() {
     echo -e "${GREEN}[+] Installing for Thunar...${NC}"
-    
     mkdir -p ~/.local/share/thunarx-python/extensions
     cp thunar/winrar.py ~/.local/share/thunarx-python/extensions/
-    
     echo -e "${GREEN}[+] Restarting Thunar to apply changes...${NC}"
     thunar -q || true
-    
     echo -e "${GREEN}[✔] Installation for Thunar completed.${NC}"
+}
+
+install_caja() {
+    echo -e "${GREEN}[+] Installing for Caja...${NC}"
+    mkdir -p ~/.local/share/caja-python/extensions
+    cp caja/winrar.py ~/.local/share/caja-python/extensions/
+    echo -e "${GREEN}[+] Restarting Caja to apply changes...${NC}"
+    caja -q || true
+    echo -e "${GREEN}[✔] Installation for Caja completed.${NC}"
 }
 
 HAS_NAUTILUS=false
 HAS_DOLPHIN=false
 HAS_NEMO=false
 HAS_THUNAR=false
+HAS_CAJA=false
 
 if command -v nautilus &> /dev/null; then HAS_NAUTILUS=true; fi
 if command -v dolphin &> /dev/null; then HAS_DOLPHIN=true; fi
 if command -v nemo &> /dev/null; then HAS_NEMO=true; fi
 if command -v thunar &> /dev/null; then HAS_THUNAR=true; fi
-
+if command -v caja &> /dev/null; then HAS_CAJA=true; fi
 
 MANAGER_COUNT=0
 [ "$HAS_NAUTILUS" = true ] && ((MANAGER_COUNT++))
 [ "$HAS_DOLPHIN" = true ] && ((MANAGER_COUNT++))
 [ "$HAS_NEMO" = true ] && ((MANAGER_COUNT++))
 [ "$HAS_THUNAR" = true ] && ((MANAGER_COUNT++))
+[ "$HAS_CAJA" = true ] && ((MANAGER_COUNT++))
 
 if [ "$MANAGER_COUNT" -gt 1 ]; then
     echo -e "${YELLOW}Found multiple supported file managers on your system.${NC}"
@@ -84,8 +82,9 @@ if [ "$MANAGER_COUNT" -gt 1 ]; then
     [ "$HAS_DOLPHIN" = true ] && echo "2. Dolphin"
     [ "$HAS_NEMO" = true ] && echo "3. Nemo"
     [ "$HAS_THUNAR" = true ] && echo "4. Thunar"
+    [ "$HAS_CAJA" = true ] && echo "5. Caja"
     
-    echo -e "${YELLOW}(You can type multiple numbers like '1 3 4' to install for multiple)${NC}"
+    echo -e "${YELLOW}(You can type multiple numbers like '1 3 5' to install for multiple)${NC}"
     read -p "Enter your choice: " choice
 
     VALID_CHOICE=false
@@ -106,6 +105,10 @@ if [ "$MANAGER_COUNT" -gt 1 ]; then
         install_thunar
         VALID_CHOICE=true
     fi
+    if [[ "$choice" == *"5"* ]] && [ "$HAS_CAJA" = true ]; then
+        install_caja
+        VALID_CHOICE=true
+    fi
 
     if [ "$VALID_CHOICE" = false ]; then
         echo -e "${RED}Invalid choice. Installation cancelled.${NC}"
@@ -115,21 +118,20 @@ if [ "$MANAGER_COUNT" -gt 1 ]; then
 elif [ "$HAS_NAUTILUS" = true ]; then
     echo -e "${GREEN}Found only Nautilus file manager.${NC}"
     install_nautilus
-
 elif [ "$HAS_DOLPHIN" = true ]; then
     echo -e "${GREEN}Found only Dolphin file manager.${NC}"
     install_dolphin
-
 elif [ "$HAS_NEMO" = true ]; then
     echo -e "${GREEN}Found only Nemo file manager.${NC}"
     install_nemo
-
 elif [ "$HAS_THUNAR" = true ]; then
     echo -e "${GREEN}Found only Thunar file manager.${NC}"
     install_thunar
-
+elif [ "$HAS_CAJA" = true ]; then
+    echo -e "${GREEN}Found only Caja file manager.${NC}"
+    install_caja
 else
-    echo -e "${RED}Neither Nautilus, Dolphin, Nemo, nor Thunar was found on this system.${NC}"
+    echo -e "${RED}No supported file managers were found on this system.${NC}"
     exit 1
 fi
 
