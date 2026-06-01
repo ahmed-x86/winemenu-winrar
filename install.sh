@@ -48,19 +48,34 @@ install_nemo() {
     echo -e "${GREEN}[✔] Installation for Nemo completed.${NC}"
 }
 
+install_thunar() {
+    echo -e "${GREEN}[+] Installing for Thunar...${NC}"
+    
+    mkdir -p ~/.local/share/thunarx-python/extensions
+    cp thunar/winrar.py ~/.local/share/thunarx-python/extensions/
+    
+    echo -e "${GREEN}[+] Restarting Thunar to apply changes...${NC}"
+    thunar -q || true
+    
+    echo -e "${GREEN}[✔] Installation for Thunar completed.${NC}"
+}
+
 HAS_NAUTILUS=false
 HAS_DOLPHIN=false
 HAS_NEMO=false
+HAS_THUNAR=false
 
 if command -v nautilus &> /dev/null; then HAS_NAUTILUS=true; fi
 if command -v dolphin &> /dev/null; then HAS_DOLPHIN=true; fi
 if command -v nemo &> /dev/null; then HAS_NEMO=true; fi
+if command -v thunar &> /dev/null; then HAS_THUNAR=true; fi
 
-# حساب عدد مديري الملفات المتوفرة
+
 MANAGER_COUNT=0
 [ "$HAS_NAUTILUS" = true ] && ((MANAGER_COUNT++))
 [ "$HAS_DOLPHIN" = true ] && ((MANAGER_COUNT++))
 [ "$HAS_NEMO" = true ] && ((MANAGER_COUNT++))
+[ "$HAS_THUNAR" = true ] && ((MANAGER_COUNT++))
 
 if [ "$MANAGER_COUNT" -gt 1 ]; then
     echo -e "${YELLOW}Found multiple supported file managers on your system.${NC}"
@@ -68,8 +83,9 @@ if [ "$MANAGER_COUNT" -gt 1 ]; then
     [ "$HAS_NAUTILUS" = true ] && echo "1. Nautilus"
     [ "$HAS_DOLPHIN" = true ] && echo "2. Dolphin"
     [ "$HAS_NEMO" = true ] && echo "3. Nemo"
+    [ "$HAS_THUNAR" = true ] && echo "4. Thunar"
     
-    echo -e "${YELLOW}(You can type multiple numbers like '1 3' to install for both)${NC}"
+    echo -e "${YELLOW}(You can type multiple numbers like '1 3 4' to install for multiple)${NC}"
     read -p "Enter your choice: " choice
 
     VALID_CHOICE=false
@@ -84,6 +100,10 @@ if [ "$MANAGER_COUNT" -gt 1 ]; then
     fi
     if [[ "$choice" == *"3"* ]] && [ "$HAS_NEMO" = true ]; then
         install_nemo
+        VALID_CHOICE=true
+    fi
+    if [[ "$choice" == *"4"* ]] && [ "$HAS_THUNAR" = true ]; then
+        install_thunar
         VALID_CHOICE=true
     fi
 
@@ -104,8 +124,12 @@ elif [ "$HAS_NEMO" = true ]; then
     echo -e "${GREEN}Found only Nemo file manager.${NC}"
     install_nemo
 
+elif [ "$HAS_THUNAR" = true ]; then
+    echo -e "${GREEN}Found only Thunar file manager.${NC}"
+    install_thunar
+
 else
-    echo -e "${RED}Neither Nautilus, Dolphin, nor Nemo was found on this system.${NC}"
+    echo -e "${RED}Neither Nautilus, Dolphin, Nemo, nor Thunar was found on this system.${NC}"
     exit 1
 fi
 
