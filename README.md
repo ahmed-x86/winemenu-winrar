@@ -2,28 +2,28 @@
 
 This project is an extension for [winemenu](https://github.com/ahmed-x86/winemenu). It brings the native Windows experience to Linux by adding WinRAR's standard options directly to your file manager's right-click context menu.
 
-Currently, this extension supports four file managers:
+Currently, this extension supports five file managers:
 
 * **Nautilus** (GNOME)
 * **Dolphin** (KDE)
 * **Nemo** (Cinnamon / Linux Mint)
 * **Thunar** (XFCE)
+* **Caja** (MATE)
 
 ## Prerequisites
 
-If you are using **Nautilus**, **Nemo**, or **Thunar**, you must install the respective Python bindings for extensions before running the installation script. Install only the package(s) for the file manager(s) you use:
+If you are using **Nautilus**, **Nemo**, **Thunar**, or **Caja**, you must install the respective Python bindings for extensions before running the installation script. Install only the package(s) for the file manager(s) you use:
 
 ### For Arch Linux:
 ```bash
 # For Nautilus:
 sudo pacman -S python-nautilus
-
 # For Nemo:
 sudo pacman -S nemo-python
-
 # For Thunar:
 sudo pacman -S thunarx-python
-
+# For Caja:
+sudo pacman -S caja-python
 ```
 
 ### For Debian / Ubuntu / Linux Mint:
@@ -31,13 +31,12 @@ sudo pacman -S thunarx-python
 ```bash
 # For Nautilus:
 sudo apt install python3-nautilus
-
 # For Nemo:
 sudo apt install python3-nemo
-
 # For Thunar:
 sudo apt install thunarx-python
-
+# For Caja:
+sudo apt install python3-caja
 ```
 
 ### For Fedora:
@@ -45,13 +44,12 @@ sudo apt install thunarx-python
 ```bash
 # For Nautilus:
 sudo dnf install nautilus-python
-
 # For Nemo:
 sudo dnf install nemo-python
-
 # For Thunar:
 sudo dnf install thunarx-python
-
+# For Caja:
+sudo dnf install caja-python
 ```
 
 *(Note: **Dolphin** users do not need these dependencies as it uses native `.desktop` service menus).*
