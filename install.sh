@@ -36,29 +36,58 @@ install_dolphin() {
     echo -e "${GREEN}[✔] Installation for Dolphin completed.${NC}"
 }
 
+install_nemo() {
+    echo -e "${GREEN}[+] Installing for Nemo...${NC}"
+    
+    mkdir -p ~/.local/share/nemo-python/extensions
+    cp nemo/winrar.py ~/.local/share/nemo-python/extensions/
+    
+    echo -e "${GREEN}[+] Restarting Nemo to apply changes...${NC}"
+    nemo -q || true
+    
+    echo -e "${GREEN}[✔] Installation for Nemo completed.${NC}"
+}
+
 HAS_NAUTILUS=false
 HAS_DOLPHIN=false
+HAS_NEMO=false
 
 if command -v nautilus &> /dev/null; then HAS_NAUTILUS=true; fi
 if command -v dolphin &> /dev/null; then HAS_DOLPHIN=true; fi
+if command -v nemo &> /dev/null; then HAS_NEMO=true; fi
 
-if [ "$HAS_NAUTILUS" = true ] && [ "$HAS_DOLPHIN" = true ]; then
-    echo -e "${YELLOW}Found both Nautilus and Dolphin on your system.${NC}"
+# حساب عدد مديري الملفات المتوفرة
+MANAGER_COUNT=0
+[ "$HAS_NAUTILUS" = true ] && ((MANAGER_COUNT++))
+[ "$HAS_DOLPHIN" = true ] && ((MANAGER_COUNT++))
+[ "$HAS_NEMO" = true ] && ((MANAGER_COUNT++))
+
+if [ "$MANAGER_COUNT" -gt 1 ]; then
+    echo -e "${YELLOW}Found multiple supported file managers on your system.${NC}"
     echo "Where would you like to install the WinRAR extension?"
-    echo "1. Nautilus"
-    echo "2. Dolphin"
-    echo -e "${YELLOW}(You can type '1 2' to install for both)${NC}"
+    [ "$HAS_NAUTILUS" = true ] && echo "1. Nautilus"
+    [ "$HAS_DOLPHIN" = true ] && echo "2. Dolphin"
+    [ "$HAS_NEMO" = true ] && echo "3. Nemo"
     
+    echo -e "${YELLOW}(You can type multiple numbers like '1 3' to install for both)${NC}"
     read -p "Enter your choice: " choice
 
-    if [[ "$choice" == *"1"* && "$choice" == *"2"* ]]; then
+    VALID_CHOICE=false
+    
+    if [[ "$choice" == *"1"* ]] && [ "$HAS_NAUTILUS" = true ]; then
         install_nautilus
+        VALID_CHOICE=true
+    fi
+    if [[ "$choice" == *"2"* ]] && [ "$HAS_DOLPHIN" = true ]; then
         install_dolphin
-    elif [[ "$choice" == *"1"* ]]; then
-        install_nautilus
-    elif [[ "$choice" == *"2"* ]]; then
-        install_dolphin
-    else
+        VALID_CHOICE=true
+    fi
+    if [[ "$choice" == *"3"* ]] && [ "$HAS_NEMO" = true ]; then
+        install_nemo
+        VALID_CHOICE=true
+    fi
+
+    if [ "$VALID_CHOICE" = false ]; then
         echo -e "${RED}Invalid choice. Installation cancelled.${NC}"
         exit 1
     fi
@@ -71,8 +100,12 @@ elif [ "$HAS_DOLPHIN" = true ]; then
     echo -e "${GREEN}Found only Dolphin file manager.${NC}"
     install_dolphin
 
+elif [ "$HAS_NEMO" = true ]; then
+    echo -e "${GREEN}Found only Nemo file manager.${NC}"
+    install_nemo
+
 else
-    echo -e "${RED}Neither Nautilus nor Dolphin was found on this system.${NC}"
+    echo -e "${RED}Neither Nautilus, Dolphin, nor Nemo was found on this system.${NC}"
     exit 1
 fi
 
