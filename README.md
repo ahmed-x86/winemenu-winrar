@@ -1,8 +1,8 @@
 # WinRAR Menu for Linux
 
-This project is an extension for [winemenu](https://github.com/ahmed-x86/winemenu). It brings the native Windows experience to Linux by adding WinRAR's standard options directly to your file manager's right-click context menu.
+This project is an extension for [winemenu](https://github.com/ahmed-x86/winemenu). It brings the native Windows experience to Linux by adding WinRAR's standard options (Extract and Compress) directly to your file manager's right-click context menu.
 
-Currently, this extension supports five file managers:
+Currently, this extension supports six file managers:
 
 * **Nautilus** (GNOME)
 * **Dolphin** (KDE)
@@ -53,7 +53,7 @@ sudo dnf install thunarx-python
 sudo dnf install caja-python
 ```
 
-*(Note: **Dolphin** users do not need these dependencies as it uses native `.desktop` service menus).*
+*(Note: **Dolphin** and **PCManFM** users do not need these dependencies as they use native `.desktop` service menus/actions).*
 
 ## Installation
 
@@ -70,7 +70,20 @@ The script will automatically detect your installed file manager(s) and prompt y
 
 ## Terminal Commands (CLI Usage)
 
-If you prefer to use the terminal, you can execute the exact same commands the extension uses in the background. Assuming your target archive is named `test.7z`:
+If you prefer to use the terminal, you can execute the exact same commands the extension uses in the background.
+
+### 🗜️ Compression Commands
+
+**1. Add to archive... / Add to quick archive (.rar):**
+Assuming you want to compress `file1.txt` and `folder1` into `archive.rar`:
+
+```bash
+wine "$HOME/.wine/drive_c/Program Files/WinRAR/WinRAR.exe" a "archive.rar" "file1.txt" "folder1"
+```
+
+### 📂 Extraction Commands
+
+Assuming your target archive is named `test.7z`:
 
 **1. Extract Here:**
 
