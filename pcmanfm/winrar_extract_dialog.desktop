@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Action
+Name=WinRAR: Extract files...
+Icon=folder-open
+Profiles=Default;
+
+[X-Action-Profile Default]
+MimeTypes=application/vnd.rar;application/x-rar;application/zip;application/x-7z-compressed;application/x-tar;application/gzip;application/x-bzip2;application/x-xz;application/octet-stream;
+Exec=python3 ~/.local/bin/winrar_pcmanfm.py EXTRACT_DIALOG %F
