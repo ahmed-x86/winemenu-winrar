@@ -65,55 +65,11 @@ install_pcmanfm() {
     chmod +x ~/.local/bin/winrar_pcmanfm.py
 
     local ACTIONS_DIR="$HOME/.local/share/file-manager/actions"
-    local MIME="application/vnd.rar;application/x-rar;application/zip;application/x-7z-compressed;application/x-tar;application/gzip;application/x-bzip2;application/x-xz;application/octet-stream;"
 
-    cat <<EOF > "$ACTIONS_DIR/winrar_extract_here.desktop"
-[Desktop Entry]
-Type=Action
-Name=WinRAR: Extract Here
-Icon=archive-extract
-Profiles=Default;
-
-[X-Action-Profile Default]
-MimeTypes=$MIME
-Exec=python3 $HOME/.local/bin/winrar_pcmanfm.py EXTRACT_HERE %F
-EOF
-
-    cat <<EOF > "$ACTIONS_DIR/winrar_extract_to.desktop"
-[Desktop Entry]
-Type=Action
-Name=WinRAR: Extract to...
-Icon=archive-extract-magic
-Profiles=Default;
-
-[X-Action-Profile Default]
-MimeTypes=$MIME
-Exec=python3 $HOME/.local/bin/winrar_pcmanfm.py EXTRACT_TO %F
-EOF
-
-    cat <<EOF > "$ACTIONS_DIR/winrar_extract_dialog.desktop"
-[Desktop Entry]
-Type=Action
-Name=WinRAR: Extract files...
-Icon=folder-open
-Profiles=Default;
-
-[X-Action-Profile Default]
-MimeTypes=$MIME
-Exec=python3 $HOME/.local/bin/winrar_pcmanfm.py EXTRACT_DIALOG %F
-EOF
-
-    cat <<EOF > "$ACTIONS_DIR/winrar_open.desktop"
-[Desktop Entry]
-Type=Action
-Name=WinRAR: Open with WinRAR
-Icon=application-x-archive
-Profiles=Default;
-
-[X-Action-Profile Default]
-MimeTypes=$MIME
-Exec=python3 $HOME/.local/bin/winrar_pcmanfm.py OPEN %F
-EOF
+    cp pcmanfm/actions/*.desktop "$ACTIONS_DIR/"
+    
+    sed -i "s|~|$HOME|g" "$ACTIONS_DIR"/winrar_*.desktop
+    chmod +x "$ACTIONS_DIR"/winrar_*.desktop
 
     echo -e "${YELLOW}[!] Restart PCManFM to see the changes.${NC}"
     echo -e "${GREEN}[✔] Installation for PCManFM completed.${NC}"
