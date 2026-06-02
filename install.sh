@@ -7,8 +7,73 @@ NC='\033[0m'
 
 cd "$(dirname "$0")" || exit
 
+
+OS_BASE="unknown"
+
+if command -v apt &> /dev/null; then
+    OS_BASE="debian"
+elif command -v pacman &> /dev/null; then
+    OS_BASE="arch"
+elif command -v dnf &> /dev/null; then
+    OS_BASE="fedora"
+else
+    if [ -f /etc/debian_version ]; then
+        OS_BASE="debian"
+    elif [ -f /etc/arch-release ]; then
+        OS_BASE="arch"
+    elif [ -f /etc/fedora-release ] || [ -f /etc/redhat-release ]; then
+        OS_BASE="fedora"
+    elif [ -f /etc/os-release ]; then
+        . /etc/os-release
+        if [[ "$ID_LIKE" == *"debian"* || "$ID" == "debian" ]]; then 
+            OS_BASE="debian"
+        elif [[ "$ID_LIKE" == *"arch"* || "$ID" == "arch" ]]; then 
+            OS_BASE="arch"
+        elif [[ "$ID_LIKE" == *"fedora"* || "$ID_LIKE" == *"rhel"* || "$ID" == "fedora" ]]; then 
+            OS_BASE="fedora"
+        fi
+    fi
+fi
+
+install_dependency() {
+    local fm=$1
+    local pkg_arch=""
+    local pkg_deb=""
+    local pkg_fed=""
+
+    case $fm in
+        "nautilus") pkg_arch="python-nautilus"; pkg_deb="python3-nautilus"; pkg_fed="nautilus-python" ;;
+        "nemo") pkg_arch="nemo-python"; pkg_deb="python3-nemo"; pkg_fed="nemo-python" ;;
+        "thunar") pkg_arch="thunarx-python"; pkg_deb="thunarx-python"; pkg_fed="thunarx-python" ;;
+        "caja") pkg_arch="caja-python"; pkg_deb="python3-caja"; pkg_fed="caja-python" ;;
+        *) return 0 ;;
+    esac
+
+    local pkg_to_install=""
+    if [ "$OS_BASE" == "debian" ]; then pkg_to_install=$pkg_deb
+    elif [ "$OS_BASE" == "arch" ]; then pkg_to_install=$pkg_arch
+    elif [ "$OS_BASE" == "fedora" ]; then pkg_to_install=$pkg_fed
+    fi
+
+    if [ -n "$pkg_to_install" ]; then
+        echo -e "${YELLOW}[+] Installing dependency for $fm: $pkg_to_install${NC}"
+        if [ "$OS_BASE" == "debian" ]; then 
+            sudo apt update && sudo apt install -y "$pkg_to_install"
+        elif [ "$OS_BASE" == "arch" ]; then 
+            sudo pacman -Sy --noconfirm "$pkg_to_install"
+        elif [ "$OS_BASE" == "fedora" ]; then 
+            sudo dnf install -y "$pkg_to_install"
+        fi
+    else
+        echo -e "${YELLOW}[!] Unknown OS for automatic installation.${NC}"
+        echo -e "${YELLOW}The required package for ($fm) is: $pkg_deb (Debian), $pkg_arch (Arch), or $pkg_fed (Fedora)${NC}"
+        echo -e "${YELLOW}Search for how to install it and it will work Insha'Allah.${NC}"
+    fi
+}
+
 install_nautilus() {
     echo -e "${GREEN}[+] Installing for Nautilus...${NC}"
+    install_dependency "nautilus"
     mkdir -p ~/.local/share/nautilus-python/extensions
     cp nautilus/winrar.py ~/.local/share/nautilus-python/extensions/
     echo -e "${GREEN}[+] Restarting Nautilus to apply changes...${NC}"
@@ -31,6 +96,7 @@ install_dolphin() {
 
 install_nemo() {
     echo -e "${GREEN}[+] Installing for Nemo...${NC}"
+    install_dependency "nemo"
     mkdir -p ~/.local/share/nemo-python/extensions
     cp nemo/winrar.py ~/.local/share/nemo-python/extensions/
     echo -e "${GREEN}[+] Restarting Nemo to apply changes...${NC}"
@@ -40,6 +106,7 @@ install_nemo() {
 
 install_thunar() {
     echo -e "${GREEN}[+] Installing for Thunar...${NC}"
+    install_dependency "thunar"
     mkdir -p ~/.local/share/thunarx-python/extensions
     cp thunar/winrar.py ~/.local/share/thunarx-python/extensions/
     echo -e "${GREEN}[+] Restarting Thunar to apply changes...${NC}"
@@ -49,6 +116,7 @@ install_thunar() {
 
 install_caja() {
     echo -e "${GREEN}[+] Installing for Caja...${NC}"
+    install_dependency "caja"
     mkdir -p ~/.local/share/caja-python/extensions
     cp caja/winrar.py ~/.local/share/caja-python/extensions/
     echo -e "${GREEN}[+] Restarting Caja to apply changes...${NC}"
