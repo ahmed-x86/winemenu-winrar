@@ -29,6 +29,55 @@ def main():
 
     action_id = sys.argv[1]
     file_paths = sys.argv[2:]
+    winrar_exe = os.path.expanduser('~/.wine/drive_c/Program Files/WinRAR/WinRAR.exe')
+    if action_id.startswith('COMPRESS'):
+        first_filepath = file_paths[0]
+        working_dir = os.path.dirname(first_filepath)
+        first_name = os.path.basename(first_filepath)
+        
+        if action_id == 'COMPRESS_QUICK':
+            archive_name = first_name + '.rar'
+            archive_linux_path = os.path.join(working_dir, archive_name)
+        elif action_id == 'COMPRESS_DIALOG':
+            try:
+                if shutil.which('kdialog'):
+                    archive_linux_path = subprocess.check_output(
+                        ['kdialog', '--getsavefilename', os.path.join(working_dir, first_name + '.rar'), '*.rar *.zip | Archives'],
+                        stderr=subprocess.DEVNULL
+                    ).decode('utf-8').strip()
+                else:
+                    archive_linux_path = subprocess.check_output(
+                        ['zenity', '--file-selection', '--save', '--confirm-overwrite', f'--filename={os.path.join(working_dir, first_name + ".rar")}'],
+                        stderr=subprocess.DEVNULL
+                    ).decode('utf-8').strip()
+                
+                if not archive_linux_path:
+                    return
+            except (subprocess.CalledProcessError, FileNotFoundError):
+                return
+
+        try:
+            archive_win_path = subprocess.check_output(
+                ['winepath', '-w', archive_linux_path],
+                stderr=subprocess.DEVNULL
+            ).decode('utf-8').strip()
+        except subprocess.CalledProcessError:
+            archive_win_path = archive_linux_path
+
+        final_cmd = ['wine', winrar_exe, 'a', archive_win_path]
+
+        for filepath in file_paths:
+            final_cmd.append(os.path.basename(filepath))
+
+        subprocess.Popen(
+            final_cmd, 
+            cwd=working_dir,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            stdin=subprocess.DEVNULL,
+            start_new_session=True
+        )
+        return
 
     processed_bases = set()
     files_to_process = []
@@ -66,8 +115,6 @@ def main():
             ).decode('utf-8').strip()
         except (subprocess.CalledProcessError, FileNotFoundError):
             return
-
-    winrar_exe = os.path.expanduser('~/.wine/drive_c/Program Files/WinRAR/WinRAR.exe')
 
     for linux_filepath in files_to_process:
         try:
