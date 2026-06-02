@@ -1,9 +1,19 @@
 [Desktop Entry]
 Type=Service
 ServiceTypes=KonqPopupMenu/Plugin
-MimeType=application/vnd.rar;application/x-rar;application/zip;application/x-7z-compressed;application/x-tar;application/gzip;application/x-bzip2;application/x-xz;application/octet-stream;
-Actions=extract_here;extract_to;extract_dialog;open_winrar;
+MimeType=application/vnd.rar;application/x-rar;application/zip;application/x-7z-compressed;application/x-tar;application/gzip;application/x-bzip2;application/x-xz;application/octet-stream;all/allfiles;inode/directory;
+Actions=compress_quick;compress_dialog;extract_here;extract_to;extract_dialog;open_winrar;
 X-KDE-Submenu=WinRAR
+
+[Desktop Action compress_quick]
+Name=Add to quick archive (.rar)
+Icon=archive-insert
+Exec=python3 ~/.local/bin/winrar_dolphin.py COMPRESS_QUICK %F
+
+[Desktop Action compress_dialog]
+Name=Add to archive...
+Icon=archive-insert
+Exec=python3 ~/.local/bin/winrar_dolphin.py COMPRESS_DIALOG %F
 
 [Desktop Action extract_here]
 Name=Extract Here
