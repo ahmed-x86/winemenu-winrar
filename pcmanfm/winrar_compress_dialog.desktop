@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Action
+Name=WinRAR: Add to archive...
+Icon=archive-insert
+Profiles=Default;
+
+[X-Action-Profile Default]
+MimeTypes=all/allfiles;inode/directory;
+Exec=python3 ~/.local/bin/winrar_pcmanfm.py COMPRESS_DIALOG %F
