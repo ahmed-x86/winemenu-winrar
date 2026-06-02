@@ -2,15 +2,16 @@ import os
 import subprocess
 import re
 import gi
+import urllib.parse
 
 try:
-    gi.require_version('Nemo', '3.0')
+    gi.require_version('Thunarx', '3.0')
 except ValueError:
     pass
 
-from gi.repository import GObject, Nemo
+from gi.repository import GObject, Thunarx
 
-class WinRARMenuProvider(GObject.GObject, Nemo.MenuProvider):
+class WinRARMenuProvider(GObject.GObject, Thunarx.MenuProvider):
     def __init__(self):
         super().__init__()
         self.valid_exts = {'.001', '.7z', '.arj', '.bz', '.bz2', '.cab', '.gz', '.iso', '.jar', '.lha', '.lz', '.lzh', '.rar', '.tar', '.taz', '.tbz', '.tbz2', '.tgz', '.tlz', '.txz', '.tzst', '.uu', '.uue', '.xxe', '.xz', '.z', '.zip', '.zipx', '.zst'}
@@ -22,8 +23,7 @@ class WinRARMenuProvider(GObject.GObject, Nemo.MenuProvider):
             {'name': 'Open with WinRAR', 'id': 'OPEN'}
         ]
 
-    def get_file_items(self, *args):
-        files = args[-1]
+    def get_file_menu_items(self, window, files):
         if not files:
             return []
 
@@ -37,16 +37,19 @@ class WinRARMenuProvider(GObject.GObject, Nemo.MenuProvider):
             if '*' not in self.valid_exts and ext not in self.valid_exts and not re.search(r'\.(r\d+|z\d+|part\d+\.rar)$', filename.lower()):
                 return []
 
-        main_item = Nemo.MenuItem(name='WineMenu::WinRAR', label='WinRAR')
-        main_submenu = Nemo.Menu()
-        main_item.set_submenu(main_submenu)
-
+        items = []
+       
         for idx, action in enumerate(self.actions):
-            item = Nemo.MenuItem(name=f"WinRARAction::{action['id']}", label=action['name'])
+            item = Thunarx.MenuItem(
+                name=f"WinRARAction::{action['id']}", 
+                label=f"WinRAR: {action['name']}", 
+                tooltip=f"WinRAR {action['name']}", 
+                icon=""
+            )
             item.connect('activate', self.execute_wine_app, files, action['id'])
-            main_submenu.append_item(item)
+            items.append(item)
 
-        return [main_item]
+        return items
 
     def get_base_archive_name(self, filename):
         name = re.sub(r'\.part\d+\.rar$', '.rar', filename, flags=re.IGNORECASE)
@@ -104,9 +107,10 @@ class WinRARMenuProvider(GObject.GObject, Nemo.MenuProvider):
                 return
 
         for file in files_to_process:
-            linux_filepath = file.get_location().get_path()
-            if not linux_filepath:
+            uri = file.get_uri()
+            if not uri.startswith('file://'):
                 continue
+            linux_filepath = urllib.parse.unquote(uri[7:])
             
             try:
                 win_filepath = subprocess.check_output(
