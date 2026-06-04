@@ -40,38 +40,28 @@ class WinRARMenuProvider(GObject.GObject, Thunarx.MenuProvider):
                 has_archives = False
                 break
 
-        items = []
+        main_item = Thunarx.MenuItem(name='ThunarMenu::WinRAR', label='WinRAR', tooltip='', icon='')
+        main_submenu = Thunarx.Menu()
+        main_item.set_menu(main_submenu)
+
         first_name = files[0].get_name()
-        
         compress_actions = [
             {'name': f'Add to "{first_name}.rar"', 'id': 'COMPRESS_QUICK'},
             {'name': 'Add to archive...', 'id': 'COMPRESS_DIALOG'}
         ]
 
-        # إضافة خيارات الضغط
         for action in compress_actions:
-            item = Thunarx.MenuItem(
-                name=f"WinRARAction::{action['id']}", 
-                label=f"WinRAR: {action['name']}", 
-                tooltip=f"WinRAR {action['name']}", 
-                icon=""
-            )
+            item = Thunarx.MenuItem(name=f"WinRARAction::{action['id']}", label=action['name'], tooltip='', icon='')
             item.connect('activate', self.execute_wine_app, files, action['id'])
-            items.append(item)
+            main_submenu.append_item(item)
 
-        # إضافة خيارات فك الضغط إذا كانت الملفات أرشيفات فقط
         if has_archives:
             for action in self.extract_actions:
-                item = Thunarx.MenuItem(
-                    name=f"WinRARAction::{action['id']}", 
-                    label=f"WinRAR: {action['name']}", 
-                    tooltip=f"WinRAR {action['name']}", 
-                    icon=""
-                )
+                item = Thunarx.MenuItem(name=f"WinRARAction::{action['id']}", label=action['name'], tooltip='', icon='')
                 item.connect('activate', self.execute_wine_app, files, action['id'])
-                items.append(item)
+                main_submenu.append_item(item)
 
-        return items
+        return [main_item]
 
     def get_base_archive_name(self, filename):
         name = re.sub(r'\.part\d+\.rar$', '.rar', filename, flags=re.IGNORECASE)
@@ -92,44 +82,106 @@ class WinRARMenuProvider(GObject.GObject, Thunarx.MenuProvider):
             return 1
         return 2
 
+    def get_linux_path(self, file):
+        uri = file.get_uri()
+        if uri.startswith('file://'):
+            return urllib.parse.unquote(uri[7:])
+        return uri
+
     def execute_wine_app(self, menu, files, action_id):
         winrar_exe = os.path.expanduser('~/.wine/drive_c/Program Files/WinRAR/WinRAR.exe')
 
         if action_id.startswith('COMPRESS'):
-            first_file = files[0]
-            uri = first_file.get_uri()
-            if not uri.startswith('file://'):
-                return
-            first_linux_filepath = urllib.parse.unquote(uri[7:])
-            working_dir = os.path.dirname(first_linux_filepath)
-            first_name = first_file.get_name()
+            first_linux_path = self.get_linux_path(files[0])
+            working_dir = os.path.dirname(first_linux_path)
+            first_name = files[0].get_name()
             
+            files_to_compress = []
+            for file in files:
+                linux_path = self.get_linux_path(file)
+                try:
+                    win_path = subprocess.check_output(['winepath', '-w', linux_path], stderr=subprocess.DEVNULL).decode('utf-8').strip()
+                    files_to_compress.append(win_path)
+                except subprocess.CalledProcessError:
+                    files_to_compress.append(linux_path)
+
             if action_id == 'COMPRESS_QUICK':
                 archive_name = first_name + '.rar'
-                archive_linux_path = os.path.join(working_dir, archive_name)
+                win_archive_path = os.path.join(os.path.dirname(files_to_compress[0]), archive_name)
+                final_cmd = ['wine', winrar_exe, 'a', '-ep1', win_archive_path] + files_to_compress
+            
             elif action_id == 'COMPRESS_DIALOG':
                 try:
-                    archive_linux_path = subprocess.check_output(
-                        ['zenity', '--file-selection', '--save', '--confirm-overwrite', f'--filename={os.path.join(working_dir, first_name + ".rar")}', '--title=Save Archive As...'],
-                        stderr=subprocess.DEVNULL
-                    ).decode('utf-8').strip()
-                    if not archive_linux_path:
+                    yad_cmd = [
+                        'yad', '--title=WinRAR Settings',
+                        '--form', '--width=500', '--center',
+                        '--text=<b>Configure Archive Settings:</b>',
+                        '--separator=|||',
+                        '--field=Archive Name', first_name,
+                        '--field=Save Location:DIR', working_dir,
+                        '--field=Archive Type:CB', '^rar!zip',
+                        '--field=Password:H', '',
+                        '--field=Split Size (e.g., 100M, 1G)', '',
+                        '--field=Compression Level:CB', '0 (Store)!1 (Fastest)!2 (Fast)!^3 (Normal)!4 (Good)!5 (Best)',
+                        '--field=Delete original files after archiving:CHK', 'FALSE',
+                        '--field=Create Solid Archive:CHK', 'FALSE',
+                        '--field=Dictionary Size (e.g., 32m, 128m)', ''
+                    ]
+                    
+                    result = subprocess.check_output(yad_cmd, stderr=subprocess.DEVNULL).decode('utf-8').strip()
+                    if not result:
                         return
-                except (subprocess.CalledProcessError, FileNotFoundError):
+                    
+                    parts = result.split('|||')
+                    archive_base_name = parts[0].strip()
+                    save_location = parts[1].strip()
+                    archive_type = parts[2].strip()
+                    password = parts[3].strip()
+                    split_size = parts[4].strip()
+                    
+                    comp_level_raw = parts[5].strip()
+                    comp_level = ""
+                    if comp_level_raw:
+                        match = re.search(r'\d', comp_level_raw)
+                        if match:
+                            comp_level = match.group()
+                    
+                    del_files = parts[6].strip()
+                    solid_arch = parts[7].strip()
+                    dict_size = parts[8].strip()
+
+                    if not archive_base_name.lower().endswith(f'.{archive_type}'):
+                        archive_name = f"{archive_base_name}.{archive_type}"
+                    else:
+                        archive_name = archive_base_name
+
+                    archive_linux_path = os.path.join(save_location, archive_name)
+                    
+                    try:
+                        archive_win_path = subprocess.check_output(['winepath', '-w', archive_linux_path], stderr=subprocess.DEVNULL).decode('utf-8').strip()
+                    except subprocess.CalledProcessError:
+                        archive_win_path = archive_linux_path
+
+                    final_cmd = ['wine', winrar_exe, 'a']
+                    
+                    if password:
+                        final_cmd.append(f'-hp{password}')
+                    if split_size:
+                        final_cmd.append(f'-v{split_size}')
+                    if comp_level in ['0', '1', '2', '3', '4', '5']:
+                        final_cmd.append(f'-m{comp_level}')
+                    if del_files == 'TRUE':
+                        final_cmd.append('-df')
+                    if solid_arch == 'TRUE':
+                        final_cmd.append('-s')
+                    if dict_size:
+                        final_cmd.append(f'-md{dict_size}')
+                    
+                    final_cmd.append(archive_win_path)
+                    final_cmd.extend(files_to_compress)
+
+                except subprocess.CalledProcessError:
                     return
-
-            try:
-                archive_win_path = subprocess.check_output(
-                    ['winepath', '-w', archive_linux_path],
-                    stderr=subprocess.DEVNULL
-                ).decode('utf-8').strip()
-            except subprocess.CalledProcessError:
-                archive_win_path = archive_linux_path
-
-            final_cmd = ['wine', winrar_exe, 'a', archive_win_path]
-            
-            for file in files:
-                final_cmd.append(file.get_name())
 
             subprocess.Popen(
                 final_cmd, 
@@ -141,11 +193,13 @@ class WinRARMenuProvider(GObject.GObject, Thunarx.MenuProvider):
 
         processed_bases = set()
         files_to_process = []
+        
         sorted_files = sorted(files, key=self.sort_files_priority)
         
         for file in sorted_files:
             filename = file.get_name()
             base_name = self.get_base_archive_name(filename)
+            
             if base_name not in processed_bases:
                 processed_bases.add(base_name)
                 files_to_process.append(file)
@@ -154,10 +208,13 @@ class WinRARMenuProvider(GObject.GObject, Thunarx.MenuProvider):
         if action_id == 'EXTRACT_DIALOG':
             try:
                 dest_linux_path = subprocess.check_output(
-                    ['zenity', '--file-selection', '--directory', '--title=Select Extraction Destination'],
+                    ['yad', '--file-selection', '--directory', '--title=Select Extraction Destination'],
                     stderr=subprocess.DEVNULL
                 ).decode('utf-8').strip()
-                if not dest_linux_path: return
+                
+                if not dest_linux_path:
+                    return
+                
                 dest_win_path = subprocess.check_output(
                     ['winepath', '-w', dest_linux_path],
                     stderr=subprocess.DEVNULL
@@ -166,9 +223,9 @@ class WinRARMenuProvider(GObject.GObject, Thunarx.MenuProvider):
                 return
 
         for file in files_to_process:
-            uri = file.get_uri()
-            if not uri.startswith('file://'): continue
-            linux_filepath = urllib.parse.unquote(uri[7:])
+            linux_filepath = self.get_linux_path(file)
+            if not linux_filepath:
+                continue
             
             try:
                 win_filepath = subprocess.check_output(
@@ -181,10 +238,14 @@ class WinRARMenuProvider(GObject.GObject, Thunarx.MenuProvider):
             working_dir = os.path.dirname(linux_filepath)
             final_cmd = ['wine', winrar_exe]
             
-            if action_id == 'EXTRACT_HERE': final_cmd.extend(['x', win_filepath])
-            elif action_id == 'EXTRACT_TO': final_cmd.extend(['x', '-ad', win_filepath])
-            elif action_id == 'EXTRACT_DIALOG': final_cmd.extend(['x', win_filepath, dest_win_path + '\\'])
-            elif action_id == 'OPEN': final_cmd.append(win_filepath)
+            if action_id == 'EXTRACT_HERE':
+                final_cmd.extend(['x', win_filepath])
+            elif action_id == 'EXTRACT_TO':
+                final_cmd.extend(['x', '-ad', win_filepath])
+            elif action_id == 'EXTRACT_DIALOG':
+                final_cmd.extend(['x', win_filepath, dest_win_path + '\\'])
+            elif action_id == 'OPEN':
+                final_cmd.append(win_filepath)
 
             subprocess.Popen(
                 final_cmd, 
